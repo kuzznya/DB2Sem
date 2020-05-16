@@ -138,3 +138,49 @@ FROM res1
 WHERE CustomerID not in (
     SELECT * FROM res2
 );
+
+WITH res (CustomerID) AS (
+    SELECT soh1.CustomerID
+    FROM Sales.SalesOrderHeader AS soh1
+    JOIN Sales.SalesOrderDetail AS sod1
+    ON soh1.SalesOrderID = sod1.SalesOrderID
+    GROUP BY soh1.CustomerID, sod1.ProductID
+    HAVING COUNT(*) = 1
+)
+SELECT soh.CustomerID
+FROM Sales.SalesOrderHeader AS soh
+WHERE soh.CustomerID not in (
+    SELECT * FROM res
+)
+
+
+-- Вопрос при сдаче лабы:
+-- Номера покупателей, которые покупали из более чем половины подкатегорий товаров
+-- и для них вывести информацию: номер покупателя, кол-во чеков, средняя сумма на один чек
+WITH bills (CustomerID, OrderID, sum) AS (
+    SELECT soh.CustomerID, sod.SalesOrderID, SUM(sod.UnitPrice * sod.OrderQty)
+    FROM Sales.SalesOrderDetail AS sod
+    JOIN Sales.SalesOrderHeader AS soh
+    ON sod.SalesOrderID = soh.SalesOrderID
+    GROUP BY soh.CustomerID, sod.SalesOrderID
+),
+customers (CustomerID) AS (
+    SELECT soh.CustomerID
+    FROM Sales.SalesOrderHeader AS soh
+    JOIN Sales.SalesOrderDetail AS sod
+    ON soh.SalesOrderID = sod.SalesOrderID
+    JOIN Production.Product AS p
+    ON p.ProductID = sod.ProductID
+    GROUP BY soh.CustomerID
+        HAVING COUNT(DISTINCT p.ProductSubcategoryID) > (
+        SELECT COUNT(DISTINCT p1.ProductSubcategoryID)
+        FROM Production.Product AS p1
+    )/2
+)
+SELECT customers.CustomerID,
+       COUNT(bills.OrderID) AS 'Count of orders',
+       AVG(bills.sum) AS 'Average sum'
+FROM customers
+JOIN bills
+ON customers.CustomerID = bills.CustomerID
+GROUP BY customers.CustomerID;
