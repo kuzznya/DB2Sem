@@ -19,7 +19,7 @@ WHERE t1.product != all (
     JOIN Sales.SalesOrderHeader AS soh
     ON sod.SalesOrderID = soh.SalesOrderID
     WHERE soh.CustomerID = t1.id
-)
+);
 
 -- 1. Вывести номера продуктов, таких, что их цена выше средней цены продукта
 -- в подкатегории, к которой относится продукт. Запрос реализовать двумя
@@ -31,7 +31,7 @@ WHERE p.ListPrice > (
     SELECT avg(p1.ListPrice)
     FROM Production.Product AS p1
     WHERE p1.ProductSubcategoryID = p.ProductSubcategoryID
-)
+);
 
 WITH res (subID, avgPrice) AS (
     SELECT p.ProductSubcategoryID, AVG(p.ListPrice)
@@ -42,7 +42,7 @@ SELECT p1.ProductID
 FROM Production.Product AS p1
 JOIN res
 ON p1.ProductSubcategoryID = res.subID
-WHERE p1.ListPrice > res.avgPrice
+WHERE p1.ListPrice > res.avgPrice;
 
 
 -- 2. Найти среднее количество покупок на чек для каждого покупателя (2 способа)
@@ -114,8 +114,27 @@ FROM (
     GROUP BY soh.CustomerID, soh.SalesOrderID
 ) AS res
 GROUP BY res.customerID, res.productsCount
-HAVING COUNT(*) = 1
+HAVING COUNT(*) = 1;
 
 -- 6. Найти номера покупателей, у которых все купленные ими товары были
 -- куплены как минимум дважды, т.е. на два разных чека.
-
+WITH res1 (CustomerID, ProductID) AS (
+    SELECT soh1.CustomerID, sod1.ProductID
+    FROM Sales.SalesOrderDetail AS sod1
+    JOIN Sales.SalesOrderHeader AS soh1
+    ON sod1.SalesOrderID = soh1.SalesOrderID
+    GROUP BY soh1.CustomerID, sod1.ProductID
+    HAVING COUNT(*) > 1
+), res2 (CustomerID) AS (
+    SELECT soh1.CustomerID
+    FROM Sales.SalesOrderDetail AS sod1
+    JOIN Sales.SalesOrderHeader AS soh1
+    ON sod1.SalesOrderID = soh1.SalesOrderID
+    GROUP BY soh1.CustomerID, sod1.ProductID
+    HAVING COUNT(*) = 1
+)
+SELECT DISTINCT CustomerID
+FROM res1
+WHERE CustomerID not in (
+    SELECT * FROM res2
+);
