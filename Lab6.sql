@@ -12,3 +12,17 @@ FROM Sales.SalesOrderDetail AS sod
 SELECT p.Name, p.ListPrice,
        p.ListPrice - MIN(p.ListPrice) OVER ( PARTITION BY p.ProductSubcategoryID)
 FROM Production.Product AS p
+
+
+-- Задание при сдаче лабы:
+-- Название товара,
+-- название категории, к которой относится
+-- и общее кол-во товаров в категории
+SELECT p.Name,
+       cat.Name,
+       COUNT(p.ProductID) OVER (PARTITION BY cat.ProductCategoryID) AS 'Count in cat'
+FROM Production.Product AS p
+JOIN Production.ProductSubcategory AS sub
+ON p.ProductSubcategoryID = sub.ProductSubcategoryID
+JOIN Production.ProductCategory AS cat
+ON sub.ProductCategoryID = cat.ProductCategoryID
