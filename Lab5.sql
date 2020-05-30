@@ -184,3 +184,48 @@ FROM customers
 JOIN bills
 ON customers.CustomerID = bills.CustomerID
 GROUP BY customers.CustomerID;
+
+
+-- Название товара, название подкатегории,
+-- общее кол-во товаров в подкатегории
+-- общее кол-во товаров того же цвета
+WITH t (subID, cnt) AS (
+    SELECT p1.ProductSubcategoryID, COUNT(*)
+    FROM Production.Product AS p1
+    GROUP BY p1.ProductSubcategoryID
+), t2 (color, cnt) AS (
+    SELECT p1.Color, COUNT(*)
+    FROM Production.Product AS p1
+    GROUP BY p1.Color
+)
+SELECT p.Name, sub.Name, t.cnt, t2.cnt
+FROM Production.Product AS p
+JOIN t
+ON p.ProductSubcategoryID = t.subID
+JOIN t2
+ON p.Color = t2.color
+JOIN Production.ProductSubcategory AS sub
+ON p.ProductSubcategoryID = sub.ProductSubcategoryID;
+
+
+-- Вывести на экран имена покупателей(ФИО),
+-- кол-во купленных ими товаров, и кол-во чеков, которые у них были
+WITH t1 (id, cnt) AS (
+    SELECT soh.CustomerID, COUNT(*)
+    FROM Sales.SalesOrderHeader AS soh
+    GROUP BY soh.CustomerID
+), t2 (id, cnt) AS (
+    SELECT soh.CustomerID, COUNT(*)
+    FROM Sales.SalesOrderHeader AS soh
+    JOIN Sales.SalesOrderDetail AS sod
+    ON soh.SalesOrderID = sod.SalesOrderID
+    GROUP BY soh.CustomerID
+)
+SELECT p.FirstName, p.LastName, t1.cnt, t2.cnt
+FROM Sales.Customer AS c
+JOIN Person.Person AS p
+ON c.PersonID = p.BusinessEntityID
+JOIN t1
+ON t1.id = c.CustomerID
+JOIN t2
+ON t2.id = c.CustomerID
